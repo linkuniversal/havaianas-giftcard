@@ -1,562 +1,109 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Servicios de Gráfica | Once Once Gráfica</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Havaianas® — Gift Card Digital</title>
 
-    <style>
-        /* RESET & BASE 100% BLANCO ALINEADO A LA IZQUIERDA */
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body {
-            background-color: #ffffff !important;
-            color: #1e293b;
-            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-        }
+  <!-- Precarga veloz del primer fondo -->
+  <link rel="preload" as="image" href="./background.webp" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start; /* Alineación estricta al margen izquierdo */
-            text-align: left;
-            padding: 16px 0;
-        }
+  <link rel="stylesheet" href="./styles.css" />
 
-        /* EFECTO LUMINOSO SUAVE AL PASAR EL MOUSE EN NAVEGADOR */
-        .photo-card {
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: transform 0.25s ease;
-            background-color: #ffffff !important;
-            margin: 0 !important;
-            text-align: left;
-        }
-        .photo-card:hover {
-            transform: translateY(-2px);
-        }
-        .photo-card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -120%;
-            width: 50%;
-            height: 200%;
-            background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.6) 50%, transparent 70%);
-            transform: skewX(-25deg);
-            pointer-events: none;
-            transition: left 0.6s ease;
-            opacity: 0;
-        }
-        .photo-card:hover::after {
-            left: 150%;
-            opacity: 1;
-        }
+  <!-- QR Generator (MIT, 12KB) & GSAP (Commercial Standard License) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
-        /* VISOR MODAL EN BLANCO / OFF-WHITE TRASLÚCIDO */
-        .gallery-lightbox[hidden] { display: none; }
-        .gallery-lightbox {
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 14px;
-        }
-        .lightbox-backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-        }
-        .lightbox-shell {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 680px;
-            height: 92vh;
-            max-height: 92dvh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 10px;
-        }
-        .lightbox-topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .lightbox-counter {
-            font-family: 'Space Grotesk', monospace;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: #475569;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 5px 12px;
-            border-radius: 999px;
-        }
-        .lightbox-close-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            color: #0f172a;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .lightbox-close-btn:hover {
-            background: #0f172a;
-            color: #ffffff;
-        }
-        .lightbox-viewport {
-            position: relative;
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 16px;
-            background: #ffffff;
-            border: 1px solid #f1f5f9;
-            overflow: hidden;
-        }
-        .lightbox-slide-track {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-        }
-        .lightbox-img {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            border-radius: 10px;
-            will-change: transform, opacity;
-        }
-        .lightbox-img.slide-right { animation: slideR 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .lightbox-img.slide-left { animation: slideL 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideR {
-            from { opacity: 0; transform: translateX(35px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideL {
-            from { opacity: 0; transform: translateX(-35px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        .lightbox-nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 5;
-            transition: all 0.2s;
-        }
-        .lightbox-nav-btn.prev { left: 12px; }
-        .lightbox-nav-btn.next { right: 12px; }
-        .lightbox-nav-btn:hover { background: #0f172a; color: #ffffff; }
-    </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
-<body style="margin: 0; padding: 16px 0; background-color: #ffffff; text-align: left;">
+<body>
 
-    <!-- TABLA MAESTRA ALINEADA A LA IZQUIERDA (align="left" y margin: 0) -->
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="left" style="width: 100%; max-width: 440px; margin: 0; text-align: left; background-color: #ffffff; border-collapse: collapse;">
-        
-        <!-- FOTO 01 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="0" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_01.webp" alt="Servicios de Gráfica 01" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
+  <!-- ESCENARIO DE FONDOS ANIMADOS (3 IMÁGENES CON CROSSFADE SUAVE) -->
+  <div id="bg-stage" aria-hidden="true">
+    <div class="bg-slide is-active" style="background-image: url('./background.webp');"></div>
+    <div class="bg-slide" style="background-image: url('./backgroundii.webp');"></div>
+    <div class="bg-slide" style="background-image: url('./backgroundiii.webp');"></div>
+    <div class="bg-scrim"></div>
+  </div>
 
-        <!-- FOTO 02 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="1" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_02.webp" alt="Servicios de Gráfica 02" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
+  <!-- MOTOR 3D WEBGL -->
+  <canvas id="webgl-canvas"></canvas>
 
-        <!-- FOTO 03 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="2" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_03.webp" alt="Servicios de Gráfica 03" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
+  <!-- SOBRE DE APERTURA VELOZ Y TÁCTIL -->
+  <div id="envelope-overlay" role="button" tabindex="0" aria-label="Abrir Gift Card Havaianas">
+    <div class="envelope-card" id="envelope-card">
+      <div class="envelope-rim"></div>
+      <div class="envelope-flap" id="envelope-flap"></div>
 
-        <!-- FOTO 04 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="3" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_04.webp" alt="Servicios de Gráfica 04" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
+      <!-- Pull-Tab translúcido de precisión -->
+      <div class="envelope-pull" id="envelope-pull">
+        <span class="pull-dot"></span>
+      </div>
 
-        <!-- FOTO 05 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="4" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_05.webp" alt="Servicios de Gráfica 05" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
+      <!-- Sello oficial Havaianas® -->
+      <div class="envelope-seal" id="envelope-seal">
+        <svg viewBox="0 0 699.72 779.59" aria-hidden="true">
+          <path d="M155.47,528.54c7.88,9.03,14.35,17.29,21.74,24.62,5.85,5.8,12.45,11.07,19.44,15.42,4.32,2.69,9.92,4.1,15.07,4.53,12.78,1.06,20.85-7.67,19.62-20.49-1.07-11.23-7.44-19.36-15.86-26.18-10.75-8.7-21.66-17.21-32.23-26.12-22.84-19.28-44.34-39.89-61.86-64.32-15.39-21.45-20.42-45.12-15.96-71.06,4.72-27.48,15.68-52.58,29.22-76.62,16.7-29.63,37.17-56.45,61.68-80.13,1.55-1.49,3.11-2.97,5.08-4.84,7.36,5.66,14.68,11.09,21.79,16.79,39.13,31.38,74.6,66.49,106.79,104.94,3.24,3.87,4.78,7.89,5.31,12.98,3.51,33.7,9.93,66.81,21.71,98.71,1.42,3.84,1.59,7.31-.12,11.04-5.48,11.95-10.56,24.09-16.33,35.89-8.81,18.03-8.81,36.6-4.43,55.58.41,1.77,1.07,3.51,1.8,5.18,4.63,10.68,13.56,12.43,21.54,3.92,9.51-10.14,14.53-22.57,17.22-36.03,1.13-5.64,2.15-11.3,3.46-18.24,2.57,5.03,4.64,8.92,6.57,12.88,18.13,37.32,35.95,74.77,48.45,114.47,5.66,17.99,10.16,36.21,11.52,55.15,2.35,32.9-9.6,58.73-37.66,76.36-26.75,16.81-55.83,26.32-87.75,26.62-32.03.31-54.77-13.98-68.76-42.52-13.49-27.52-27.21-54.94-40.16-82.72-18.63-39.98-36.66-80.24-54.93-120.39-.59-1.29-.98-2.67-1.97-5.41Z"/>
+          <path d="M500.14,203.13c21.65,21.6,40.56,44.99,56.4,70.79,14,22.81,24.93,46.96,32.35,72.78,11.21,39,3.32,73.01-23.68,103.45-24.49,27.62-52.42,51.13-81.69,73.31-5.39,4.08-10.71,8.71-14.62,14.13-3.04,4.22-4.89,9.94-5.44,15.19-1.29,12.18,7.95,21.2,20.17,20.57,12.61-.65,23.11-6.5,32.04-14.78,8.65-8.02,16.45-16.97,24.61-25.52.9-.94,1.73-1.94,3.03-2.65-24.62,55.19-52.78,108.48-84.65,161.5-.37-2.25-.59-2.98-.59-3.72-.25-28.94-8.07-56.28-17.76-83.18-15-41.64-35.33-80.83-55.62-120.04-1.35-2.6-2.18-6-1.86-8.86,3.18-27.72,4.48-55.46,2.19-83.31-1.9-23.02-6.21-45.51-14.72-67.09-.97-2.45-1.81-4.55.66-7.15,34.47-36.29,70.14-71.26,110.06-101.64,5.3-4.03,10.75-7.88,16.14-11.8.8-.58,1.65-1.11,2.97-1.98Z"/>
+          <path d="M327.47,251.48c-19.64-21.86-40.27-41.69-62.71-59.64-17.74-14.19-36.56-26.78-56.8-37.11-4.29-2.19-6.07-4.79-6-9.59.1-7.32-.45-14.65-.78-21.98-.31-6.76-3.78-9.97-10.53-9.83-6.55.14-10.2,3.74-9.78,10.53.47,7.64,1.31,15.28,2.48,22.85.59,3.85-.67,5.9-3.63,8.24-45.01,35.83-78.4,79.98-96.03,135.26-8.97,28.14-10.22,56.9-6.22,86.01.5,3.61.94,7.23,1.48,11.44-.89-.59-1.5-.79-1.78-1.21-21.59-32.7-42.66-65.71-57.96-101.97C7.52,256.76-.1,228.11,0,197.74c.09-27.01,7.72-51.96,20.81-75.28,23.37-41.63,54.73-75.79,95.91-100.4C139.08,8.7,163.04-.11,189.5.17c39.77.43,69.61,19.04,91.34,51.43,15.28,22.78,22.67,48.79,29.1,75.08,8.65,35.37,12.96,71.41,16.12,107.61.5,5.73.95,11.46,1.42,17.19Z"/>
+          <path d="M619.32,388.93c1.23-11.94,2.7-22.81,3.42-33.72,2.93-44.34-10.02-84.49-32.61-122.05-18.32-30.45-41.63-56.51-69.33-78.68-2.52-2.01-3.49-3.96-2.94-7.17,1.24-7.22,2.34-14.47,3.13-21.75.81-7.5-2.57-11.77-9.08-12.21-7.36-.5-11.34,3.17-11.75,10.91-.4,7.65-.89,15.29-1.08,22.94-.07,2.8-.85,4.46-3.5,5.81-44.71,22.61-82.75,53.85-116.67,90.41-1.47,1.59-3.01,3.11-4.55,4.64-.21.21-.56.26-1.41.63,0-2.09-.14-3.98.02-5.84,4.58-51.52,11.8-102.55,29.01-151.64,7.33-20.92,17-40.71,32.8-56.62C469.2-.09,509.95-8.02,555.56,7.78c25.25,8.75,46.82,23.75,66.42,41.66,23.7,21.65,43.25,46.53,58.38,74.91,21.61,40.52,24.4,82.73,11.97,126.44-9.85,34.65-26.75,65.95-45.67,96.28-7.84,12.57-16.07,24.91-24.13,37.35-.85,1.31-1.82,2.55-3.22,4.51Z"/>
+          <path d="M361.44,428.49c-10.72-28.27-17.87-56.33-19.8-86.53,19.46,18.77,29.26,61.53,19.8,86.53Z"/>
+        </svg>
+      </div>
 
-        <!-- FOTO 06 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="5" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_06.webp" alt="Servicios de Gráfica 06" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 07 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="6" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_07.webp" alt="Servicios de Gráfica 07" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 08 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="7" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_08.webp" alt="Servicios de Gráfica 08" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 09 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="8" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_09.webp" alt="Servicios de Gráfica 09" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 10 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="9" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_10.webp" alt="Servicios de Gráfica 10" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 11 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="10" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_11.webp" alt="Servicios de Gráfica 11" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 12 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="11" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_12.webp" alt="Servicios de Gráfica 12" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 13 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="12" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_13.webp" alt="Servicios de Gráfica 13" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 14 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="13" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_14.webp" alt="Servicios de Gráfica 14" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 15 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="14" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_15.webp" alt="Servicios de Gráfica 15" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 16 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="15" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_16.webp" alt="Servicios de Gráfica 16" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 17 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="16" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_17.webp" alt="Servicios de Gráfica 17" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 18 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="17" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_18.webp" alt="Servicios de Gráfica 18" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 19 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="18" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_19.webp" alt="Servicios de Gráfica 19" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 20 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="19" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_20.webp" alt="Servicios de Gráfica 20" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 21 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="20" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_21.webp" alt="Servicios de Gráfica 21" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 22 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="21" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_22.webp" alt="Servicios de Gráfica 22" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 23 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="22" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_23.webp" alt="Servicios de Gráfica 23" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 24 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="23" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_24.webp" alt="Servicios de Gráfica 24" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 25 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="24" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_25.webp" alt="Servicios de Gráfica 25" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 26 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="25" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_26.webp" alt="Servicios de Gráfica 26" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 27 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="26" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_27.webp" alt="Servicios de Gráfica 27" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 28 -->
-        <tr>
-            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="27" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_28.webp" alt="Servicios de Gráfica 28" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-        <!-- FOTO 29 -->
-        <tr>
-            <td align="left" style="padding: 0; text-align: left; background-color: #ffffff;">
-                <div class="photo-card" data-index="28" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
-                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_29.webp" alt="Servicios de Gráfica 29" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
-                </div>
-            </td>
-        </tr>
-
-    </table>
-
-    <!-- MODAL LIGHTBOX EN BLANCO / OFF-WHITE -->
-    <div class="gallery-lightbox" id="galleryLightbox" role="dialog" aria-modal="true" aria-label="Visor" hidden>
-        <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
-        <div class="lightbox-shell">
-            <header class="lightbox-topbar">
-                <span class="lightbox-counter" id="lightboxCounter">01 / 29</span>
-                <button type="button" class="lightbox-close-btn" id="lightboxCloseBtn" aria-label="Cerrar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-            </header>
-
-            <div class="lightbox-viewport" id="lightboxViewport">
-                <button type="button" class="lightbox-nav-btn prev" id="lightboxPrevBtn" aria-label="Anterior">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                </button>
-
-                <div class="lightbox-slide-track">
-                    <img class="lightbox-img" id="lightboxImg" src="" alt="Vista ampliada" />
-                </div>
-
-                <button type="button" class="lightbox-nav-btn next" id="lightboxNextBtn" aria-label="Siguiente">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </button>
-            </div>
-        </div>
+      <div class="envelope-info">
+        <span class="envelope-tag">GIFT CARD OFICIAL</span>
+        <strong id="envelope-recipient">Para Sofía Martínez</strong>
+        <small id="envelope-sender">De Lucas Fernández · $150.000 ARS</small>
+      </div>
     </div>
 
-    <!-- MOTOR INTERACTIVO -->
-    <script>
-        (function() {
-            const BASE_URL = 'https://onceoncegrafica-1111.github.io/imagenes-email/';
-            const TOTAL = 29;
-            const images = [];
-            for (let i = 1; i <= TOTAL; i++) {
-                images.push(`${BASE_URL}imagen_${String(i).padStart(2, '0')}.webp`);
-            }
+    <div class="tap-hint">
+      <span class="pulse-dot"></span>
+      <span>Toca el sobre para abrir tu regalo</span>
+    </div>
+  </div>
 
-            const lightbox = document.getElementById('galleryLightbox');
-            const backdrop = document.getElementById('lightboxBackdrop');
-            const closeBtn = document.getElementById('lightboxCloseBtn');
-            const prevBtn = document.getElementById('lightboxPrevBtn');
-            const nextBtn = document.getElementById('lightboxNextBtn');
-            const mainImg = document.getElementById('lightboxImg');
-            const counter = document.getElementById('lightboxCounter');
-            const viewport = document.getElementById('lightboxViewport');
+  <!-- HUD SUPERIOR: MARCA + SELECTOR DE 5 ARMONÍAS PANTONE -->
+  <header class="hud-top" id="hud-top">
+    <div class="glass-pill brand-badge">
+      <span class="brand-dot" id="hud-dot"></span>
+      <span id="hud-brand">havaianas®</span>
+      <span class="sep">·</span>
+      <strong id="hud-amount">$150.000</strong>
+    </div>
 
-            let currentIndex = 0;
-            let isOpen = false;
+    <div class="glass-pill palette-bar" id="palette-bar" role="group" aria-label="Elegir color de Gift Card">
+      <!-- Los 5 swatches se inyectan dinámicamente desde scene3d.js -->
+    </div>
+  </header>
 
-            function updateSlide(dir = 'right') {
-                mainImg.classList.remove('slide-right', 'slide-left');
-                void mainImg.offsetWidth;
-                mainImg.src = images[currentIndex];
-                mainImg.classList.add(dir === 'right' ? 'slide-right' : 'slide-left');
-                counter.textContent = `${String(currentIndex + 1).padStart(2, '0')} / ${String(TOTAL).padStart(2, '0')}`;
-            }
+  <!-- BARRA DE MODO LECTURA CERCANA (AL TOCAR UNA TARJETA) -->
+  <div class="inspect-bar" id="inspect-bar" aria-hidden="true">
+    <span id="inspect-label">Vista de Lectura — Frente</span>
+    <button type="button" class="btn-close-inspect" id="btn-inspect-close">Volver</button>
+  </div>
 
-            function openGallery(idx) {
-                currentIndex = idx;
-                isOpen = true;
-                updateSlide('right');
-                lightbox.hidden = false;
-                document.body.style.overflow = 'hidden';
-            }
+  <!-- HUD INFERIOR: POSICIÓN 1 / POSICIÓN 2 / COPIAR -->
+  <nav class="hud-bottom-wrap" id="hud-bottom-wrap">
+    <div class="micro-hint" id="micro-hint">Toca una tarjeta para leer de cerca · Arrastra para girar</div>
+    <div class="glass-pill hud-bottom">
+      <button type="button" class="btn-pill is-active" data-mode="front" id="btn-front">Vista Frontal</button>
+      <button type="button" class="btn-pill" data-mode="studio" id="btn-studio">Vista Estudio</button>
+      <button type="button" class="btn-pill btn-cta" id="btn-copy">Copiar Código</button>
+    </div>
+  </nav>
 
-            function closeGallery() {
-                isOpen = false;
-                lightbox.hidden = true;
-                document.body.style.overflow = '';
-            }
-
-            function navigate(step) {
-                if (!isOpen) return;
-                currentIndex = (currentIndex + step + TOTAL) % TOTAL;
-                updateSlide(step > 0 ? 'right' : 'left');
-            }
-
-            document.querySelectorAll('.photo-card').forEach(card => {
-                card.addEventListener('click', () => {
-                    const idx = parseInt(card.getAttribute('data-index') || '0', 10);
-                    openGallery(idx);
-                });
-            });
-
-            closeBtn.addEventListener('click', closeGallery);
-            backdrop.addEventListener('click', closeGallery);
-            prevBtn.addEventListener('click', () => navigate(-1));
-            nextBtn.addEventListener('click', () => navigate(1));
-
-            window.addEventListener('keydown', (e) => {
-                if (!isOpen) return;
-                if (e.key === 'Escape') closeGallery();
-                if (e.key === 'ArrowRight') navigate(1);
-                if (e.key === 'ArrowLeft') navigate(-1);
-            });
-
-            let touchStartX = 0;
-            viewport.addEventListener('touchstart', (e) => {
-                touchStartX = e.changedTouches[0]?.clientX || 0;
-            }, { passive: true });
-            viewport.addEventListener('touchend', (e) => {
-                const diff = (e.changedTouches[0]?.clientX || 0) - touchStartX;
-                if (Math.abs(diff) > 35) navigate(diff < 0 ? 1 : -1);
-            }, { passive: true });
-        })();
-    </script>
+  <script type="module" src="./scene3d.js"></script>
 </body>
 </html>
