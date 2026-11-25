@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios de Gráfica | Once Once Gráfica</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* RESET & BASE 100% BLANCO ALINEADO A LA IZQUIERDA */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            background-color: #ffffff !important;
+            color: #1e293b;
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* Alineación estricta al margen izquierdo */
+            text-align: left;
+            padding: 16px 0;
+        }
+
+        /* EFECTO LUMINOSO SUAVE AL PASAR EL MOUSE EN NAVEGADOR */
+        .photo-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.25s ease;
+            background-color: #ffffff !important;
+            margin: 0 !important;
+            text-align: left;
+        }
+        .photo-card:hover {
+            transform: translateY(-2px);
+        }
+        .photo-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -120%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.6) 50%, transparent 70%);
+            transform: skewX(-25deg);
+            pointer-events: none;
+            transition: left 0.6s ease;
+            opacity: 0;
+        }
+        .photo-card:hover::after {
+            left: 150%;
+            opacity: 1;
+        }
+
+        /* VISOR MODAL EN BLANCO / OFF-WHITE TRASLÚCIDO */
+        .gallery-lightbox[hidden] { display: none; }
+        .gallery-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+        }
+        .lightbox-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .lightbox-shell {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 680px;
+            height: 92vh;
+            max-height: 92dvh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .lightbox-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .lightbox-counter {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #475569;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 5px 12px;
+            border-radius: 999px;
+        }
+        .lightbox-close-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #0f172a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lightbox-close-btn:hover {
+            background: #0f172a;
+            color: #ffffff;
+        }
+        .lightbox-viewport {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            overflow: hidden;
+        }
+        .lightbox-slide-track {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 10px;
+            will-change: transform, opacity;
+        }
+        .lightbox-img.slide-right { animation: slideR 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .lightbox-img.slide-left { animation: slideL 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideR {
+            from { opacity: 0; transform: translateX(35px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideL {
+            from { opacity: 0; transform: translateX(-35px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .lightbox-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            transition: all 0.2s;
+        }
+        .lightbox-nav-btn.prev { left: 12px; }
+        .lightbox-nav-btn.next { right: 12px; }
+        .lightbox-nav-btn:hover { background: #0f172a; color: #ffffff; }
+    </style>
+</head>
+<body style="margin: 0; padding: 16px 0; background-color: #ffffff; text-align: left;">
+
+    <!-- TABLA MAESTRA ALINEADA A LA IZQUIERDA (align="left" y margin: 0) -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="left" style="width: 100%; max-width: 440px; margin: 0; text-align: left; background-color: #ffffff; border-collapse: collapse;">
+        
+        <!-- FOTO 01 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="0" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_01.webp" alt="Servicios de Gráfica 01" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 02 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="1" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_02.webp" alt="Servicios de Gráfica 02" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 03 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="2" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_03.webp" alt="Servicios de Gráfica 03" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 04 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="3" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_04.webp" alt="Servicios de Gráfica 04" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 05 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="4" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_05.webp" alt="Servicios de Gráfica 05" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 06 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="5" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_06.webp" alt="Servicios de Gráfica 06" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 07 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="6" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_07.webp" alt="Servicios de Gráfica 07" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 08 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="7" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_08.webp" alt="Servicios de Gráfica 08" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 09 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="8" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_09.webp" alt="Servicios de Gráfica 09" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 10 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="9" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_10.webp" alt="Servicios de Gráfica 10" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 11 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="10" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_11.webp" alt="Servicios de Gráfica 11" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 12 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="11" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_12.webp" alt="Servicios de Gráfica 12" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 13 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="12" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_13.webp" alt="Servicios de Gráfica 13" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 14 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="13" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_14.webp" alt="Servicios de Gráfica 14" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 15 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="14" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_15.webp" alt="Servicios de Gráfica 15" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 16 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="15" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_16.webp" alt="Servicios de Gráfica 16" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 17 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="16" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_17.webp" alt="Servicios de Gráfica 17" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 18 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="17" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_18.webp" alt="Servicios de Gráfica 18" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 19 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="18" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_19.webp" alt="Servicios de Gráfica 19" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 20 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="19" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_20.webp" alt="Servicios de Gráfica 20" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 21 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="20" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_21.webp" alt="Servicios de Gráfica 21" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 22 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="21" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_22.webp" alt="Servicios de Gráfica 22" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 23 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="22" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_23.webp" alt="Servicios de Gráfica 23" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 24 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="23" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_24.webp" alt="Servicios de Gráfica 24" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 25 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="24" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_25.webp" alt="Servicios de Gráfica 25" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 26 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="25" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_26.webp" alt="Servicios de Gráfica 26" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 27 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="26" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_27.webp" alt="Servicios de Gráfica 27" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 28 -->
+        <tr>
+            <td align="left" style="padding: 0 0 22px 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="27" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_28.webp" alt="Servicios de Gráfica 28" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- FOTO 29 -->
+        <tr>
+            <td align="left" style="padding: 0; text-align: left; background-color: #ffffff;">
+                <div class="photo-card" data-index="28" style="width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin: 0; text-align: left;">
+                    <img src="https://onceoncegrafica-1111.github.io/imagenes-email/imagen_29.webp" alt="Servicios de Gráfica 29" width="440" style="display: block; width: 100%; max-width: 440px; height: auto; border-radius: 12px; border: 0; outline: none; margin: 0;" />
+                </div>
+            </td>
+        </tr>
+
+    </table>
+
+    <!-- MODAL LIGHTBOX EN BLANCO / OFF-WHITE -->
+    <div class="gallery-lightbox" id="galleryLightbox" role="dialog" aria-modal="true" aria-label="Visor" hidden>
+        <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+        <div class="lightbox-shell">
+            <header class="lightbox-topbar">
+                <span class="lightbox-counter" id="lightboxCounter">01 / 29</span>
+                <button type="button" class="lightbox-close-btn" id="lightboxCloseBtn" aria-label="Cerrar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </header>
+
+            <div class="lightbox-viewport" id="lightboxViewport">
+                <button type="button" class="lightbox-nav-btn prev" id="lightboxPrevBtn" aria-label="Anterior">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+
+                <div class="lightbox-slide-track">
+                    <img class="lightbox-img" id="lightboxImg" src="" alt="Vista ampliada" />
+                </div>
+
+                <button type="button" class="lightbox-nav-btn next" id="lightboxNextBtn" aria-label="Siguiente">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOTOR INTERACTIVO -->
+    <script>
+        (function() {
+            const BASE_URL = 'https://onceoncegrafica-1111.github.io/imagenes-email/';
+            const TOTAL = 29;
+            const images = [];
+            for (let i = 1; i <= TOTAL; i++) {
+                images.push(`${BASE_URL}imagen_${String(i).padStart(2, '0')}.webp`);
+            }
+
+            const lightbox = document.getElementById('galleryLightbox');
+            const backdrop = document.getElementById('lightboxBackdrop');
+            const closeBtn = document.getElementById('lightboxCloseBtn');
+            const prevBtn = document.getElementById('lightboxPrevBtn');
+            const nextBtn = document.getElementById('lightboxNextBtn');
+            const mainImg = document.getElementById('lightboxImg');
+            const counter = document.getElementById('lightboxCounter');
+            const viewport = document.getElementById('lightboxViewport');
+
+            let currentIndex = 0;
+            let isOpen = false;
+
+            function updateSlide(dir = 'right') {
+                mainImg.classList.remove('slide-right', 'slide-left');
+                void mainImg.offsetWidth;
+                mainImg.src = images[currentIndex];
+                mainImg.classList.add(dir === 'right' ? 'slide-right' : 'slide-left');
+                counter.textContent = `${String(currentIndex + 1).padStart(2, '0')} / ${String(TOTAL).padStart(2, '0')}`;
+            }
+
+            function openGallery(idx) {
+                currentIndex = idx;
+                isOpen = true;
+                updateSlide('right');
+                lightbox.hidden = false;
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeGallery() {
+                isOpen = false;
+                lightbox.hidden = true;
+                document.body.style.overflow = '';
+            }
+
+            function navigate(step) {
+                if (!isOpen) return;
+                currentIndex = (currentIndex + step + TOTAL) % TOTAL;
+                updateSlide(step > 0 ? 'right' : 'left');
+            }
+
+            document.querySelectorAll('.photo-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const idx = parseInt(card.getAttribute('data-index') || '0', 10);
+                    openGallery(idx);
+                });
+            });
+
+            closeBtn.addEventListener('click', closeGallery);
+            backdrop.addEventListener('click', closeGallery);
+            prevBtn.addEventListener('click', () => navigate(-1));
+            nextBtn.addEventListener('click', () => navigate(1));
+
+            window.addEventListener('keydown', (e) => {
+                if (!isOpen) return;
+                if (e.key === 'Escape') closeGallery();
+                if (e.key === 'ArrowRight') navigate(1);
+                if (e.key === 'ArrowLeft') navigate(-1);
+            });
+
+            let touchStartX = 0;
+            viewport.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0]?.clientX || 0;
+            }, { passive: true });
+            viewport.addEventListener('touchend', (e) => {
+                const diff = (e.changedTouches[0]?.clientX || 0) - touchStartX;
+                if (Math.abs(diff) > 35) navigate(diff < 0 ? 1 : -1);
+            }, { passive: true });
+        })();
+    </script>
+</body>
+</html>
