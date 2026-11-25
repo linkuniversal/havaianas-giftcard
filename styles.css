@@ -1,0 +1,469 @@
+:root {
+  --accent: #FB373C;
+  --accent-light: #FF6B6F;
+  --accent-dark: #B5181D;
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-border-top: rgba(255, 255, 255, 0.85);
+  --glass-border-bottom: rgba(15, 23, 28, 0.14);
+  --ink: #14191C;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ink);
+  background: #AEEFFB;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================
+   FONDOS ANIMADOS SUAVES (3 WEBP CON CROSSFADE NO EPILEPTICO)
+   ========================================================= */
+#bg-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-slide {
+  position: absolute;
+  inset: -4%;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transform: scale(1.02) translate3d(0, 0, 0);
+  transition:
+    opacity 2.8s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 14s cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: opacity, transform;
+}
+
+.bg-slide.is-active {
+  opacity: 1;
+  transform: scale(1.07) translate3d(0, -1%, 0);
+}
+
+/* Velo atmosférico sutil para recorte limpio de las tarjetas 3D */
+.bg-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.16) 0%, rgba(12, 24, 34, 0.22) 100%);
+  backdrop-filter: blur(2.5px) saturate(1.06);
+  -webkit-backdrop-filter: blur(2.5px) saturate(1.06);
+}
+
+/* =========================================================
+   CANVAS WEBGL 3D
+   ========================================================= */
+#webgl-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 2;
+  touch-action: none;
+  cursor: grab;
+}
+
+#webgl-canvas:active {
+  cursor: grabbing;
+}
+
+/* =========================================================
+   SOBRE DE APERTURA (UNBOXING VELOZ Y REALISTA)
+   ========================================================= */
+#envelope-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.15) 0%, rgba(10, 22, 32, 0.42) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.envelope-card {
+  position: relative;
+  width: min(88vw, 390px);
+  aspect-ratio: 1.54 / 1;
+  border-radius: 22px;
+  background: linear-gradient(155deg, #FFFDF9 0%, #F4EFE7 58%, #E9E0D4 100%);
+  box-shadow:
+    0 32px 64px rgba(10, 18, 26, 0.34),
+    0 6px 16px rgba(10, 18, 26, 0.14);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: clamp(16px, 4vw, 24px);
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.envelope-card:hover {
+  transform: translateY(-5px) scale(1.015);
+}
+
+/* Doble filo de luz inspirado en ShadingLayers */
+.envelope-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.envelope-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 55%;
+  background: linear-gradient(180deg, #FBF8F3 0%, #EAE2D7 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.1));
+  z-index: 2;
+}
+
+/* Pull-Tab translúcido superior */
+.envelope-pull {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 46px;
+  border-radius: 0 0 99px 99px;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.9), 0 4px 10px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  z-index: 3;
+}
+
+.pull-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.65);
+}
+
+.envelope-seal {
+  position: absolute;
+  top: 47%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(58px, 14vw, 70px);
+  height: clamp(58px, 14vw, 70px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--accent-light) 0%, var(--accent) 60%, var(--accent-dark) 100%);
+  display: grid;
+  place-items: center;
+  box-shadow:
+    0 12px 24px rgba(251, 55, 60, 0.35),
+    inset 0 2px 3px rgba(255, 255, 255, 0.45);
+  z-index: 4;
+}
+
+.envelope-seal svg {
+  width: 54%;
+  height: auto;
+  display: block;
+}
+
+.envelope-info {
+  position: relative;
+  z-index: 4;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+}
+
+.envelope-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+.envelope-info strong {
+  font-size: clamp(14px, 3.8vw, 17px);
+  font-weight: 700;
+  color: #161B1E;
+}
+
+.envelope-info small {
+  font-size: clamp(11px, 2.8vw, 12px);
+  color: #5C6468;
+  font-weight: 500;
+}
+
+.tap-hint {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgba(15, 21, 25, 0.64);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  font-size: clamp(12px, 3vw, 13px);
+  font-weight: 500;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #83B90B;
+  box-shadow: 0 0 0 0 rgba(131, 185, 11, 0.7);
+  animation: pulseRing 1.8s infinite;
+}
+
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 rgba(131, 185, 11, 0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(131, 185, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(131, 185, 11, 0); }
+}
+
+/* =========================================================
+   HUD FLOTANTE (BLINDADO PARA PC, MÓVIL Y WEBVIEW IG/WPP)
+   ========================================================= */
+.glass-pill {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-top: 1px solid var(--glass-border-top);
+  border-bottom: 1px solid var(--glass-border-bottom);
+  border-left: 1px solid rgba(255, 255, 255, 0.45);
+  border-right: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  box-shadow: 0 12px 32px rgba(10, 18, 26, 0.16);
+}
+
+.hud-top {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.brand-badge {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: clamp(11px, 2.8vw, 13px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: background 0.3s ease;
+}
+
+.brand-badge .sep {
+  opacity: 0.35;
+}
+
+.palette-bar {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+}
+
+.swatch-btn {
+  width: clamp(18px, 4.5vw, 22px);
+  height: clamp(18px, 4.5vw, 22px);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.swatch-btn:hover {
+  transform: scale(1.12);
+}
+
+.swatch-btn.is-active {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 2px #14191C, 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Barra superior contextual cuando se inspecciona una tarjeta de cerca */
+.inspect-bar {
+  position: fixed;
+  top: max(58px, calc(env(safe-area-inset-top) + 48px));
+  left: 50%;
+  transform: translate(-50%, -10px);
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 999px;
+  background: rgba(16, 22, 26, 0.84);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #FFFFFF;
+  font-size: clamp(11px, 2.8vw, 12px);
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.inspect-bar.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.btn-close-inspect {
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+/* Barra inferior */
+.hud-bottom-wrap {
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100vw - 16px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.micro-hint {
+  font-size: clamp(10px, 2.6vw, 11.5px);
+  font-weight: 600;
+  color: #FFFFFF;
+  background: rgba(15, 22, 26, 0.52);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.hud-bottom {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  max-width: 100%;
+}
+
+.btn-pill {
+  border: none;
+  background: transparent;
+  color: #1F262A;
+  font-family: inherit;
+  font-size: clamp(11px, 2.9vw, 13px);
+  font-weight: 600;
+  padding: clamp(7px, 1.9vw, 9px) clamp(10px, 2.8vw, 16px);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.15s ease;
+}
+
+.btn-pill:active {
+  transform: scale(0.96);
+}
+
+.btn-pill.is-active {
+  background: var(--accent);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.btn-pill.btn-cta {
+  background: #14191C;
+  color: #FFFFFF;
+}
+
+/* Ajuste fino para WebViews ultra angostos (IG / WhatsApp < 350px) */
+@media (max-width: 360px) {
+  .hud-top {
+    left: 8px;
+    right: 8px;
+  }
+  .brand-badge {
+    padding: 6px 10px;
+  }
+  .palette-bar {
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  .btn-pill {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+}
