@@ -1,7 +1,10 @@
-// scene3d.js — Motor WebGL PBR, Extrusión Perfecta, Física WASM y Sombras Reales
+// scene3d.js — Motor WebGL PBR Optimizado, Luz Calibrada, Física WASM y Sombras Reales
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CARD_DATA, PALETTES, makeThemedColor, createCardMaps } from './card-textures.js';
+
+const isMobilePerf =
+  window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 768;
 
 /* ==========================================================================
    1. NÚCLEO WEBASSEMBLY PARA FÍSICA DE RESORTE AMORTIGUADO (NASA / TOYOTA)
@@ -36,7 +39,6 @@ class SpringBank {
     WebAssembly.instantiate(WASM_SPRING_BYTES).then(({ instance }) => {
       this.wasm = instance.exports;
       this.f32 = new Float32Array(this.wasm.mem.buffer);
-      // Sincronizar estado inicial hacia memoria lineal WASM
       this.f32.set(this.fallback.subarray(0, count * 2), 0);
     }).catch(() => {});
   }
@@ -85,10 +87,10 @@ class SpringBank {
 }
 
 /* ==========================================================================
-   2. MICRO AUDIO SINTÉTICO TÁCTIL (0 KB, OPCIONAL Y SUTIL)
+   2. MICRO AUDIO SINTÉTICO TÁCTIL (0 KB)
    ========================================================================== */
 let audioCtx = null;
-function playTactileTone(freq = 520, duration = 0.055, vol = 0.035) {
+function playTactileTone(freq = 520, duration = 0.055, vol = 0.032) {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -103,11 +105,11 @@ function playTactileTone(freq = 520, duration = 0.055, vol = 0.035) {
     gain.connect(audioCtx.destination);
     osc.start();
     osc.stop(audioCtx.currentTime + duration);
-  } catch { /* Silencioso si el navegador restringe audio */ }
+  } catch {}
 }
 
 /* ==========================================================================
-   3. CICLO CALMO DE LOS 3 FONDOS (SIN PARPADEO NI ESTRÉS VISUAL)
+   3. CICLO CALMO DE LOS 3 FONDOS
    ========================================================================== */
 const bgSlides = Array.from(document.querySelectorAll('#bg-stage .bg-slide'));
 let activeBgIndex = 0;
@@ -120,7 +122,7 @@ if (bgSlides.length > 1) {
 }
 
 /* ==========================================================================
-   4. MOTOR THREE.JS + EXTRUSIÓN BISELADA PERFECTA + SOMBRAS REALES
+   4. MOTOR THREE.JS + LUZ CALIBRADA PANTONE + RENDIMIENTO MÓVIL
    ========================================================================== */
 const canvas = document.getElementById('webgl-canvas');
 const renderer = new THREE.WebGLRenderer({
@@ -129,50 +131,51 @@ const renderer = new THREE.WebGLRenderer({
   alpha: true,
   powerPreference: 'high-performance',
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobilePerf ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.06;
+renderer.toneMappingExposure = 0.88; // Calibrado para colores Pantone intensos sin sobreexponer
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.045).texture;
-scene.environmentIntensity = 0.85;
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.05).texture;
+scene.environmentIntensity = 0.44; // Sutil para que no lave el rojo ni el dorso blanco
 
 const camera = new THREE.PerspectiveCamera(34, window.innerWidth / window.innerHeight, 0.1, 100);
 
-// Luz direccional principal con proyección de sombra real PCFSoftShadowMap
-const keyLight = new THREE.DirectionalLight(0xfff9f2, 1.85);
-keyLight.position.set(2.4, 3.4, 7.6);
+// Luz lateral de estudio (proyecta sombra diagonal limpia y evita reflejo blanco plano frontal)
+const shadowRes = isMobilePerf ? 1024 : 2048;
+const keyLight = new THREE.DirectionalLight(0xfffaf3, 1.15);
+keyLight.position.set(3.8, 4.2, 5.8);
 keyLight.castShadow = true;
-keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.mapSize.set(shadowRes, shadowRes);
 keyLight.shadow.camera.near = 1;
 keyLight.shadow.camera.far = 22;
 keyLight.shadow.camera.left = -6.5;
 keyLight.shadow.camera.right = 6.5;
 keyLight.shadow.camera.top = 6.5;
 keyLight.shadow.camera.bottom = -6.5;
-keyLight.shadow.bias = -0.0004;
+keyLight.shadow.bias = -0.0005;
 keyLight.shadow.normalBias = 0.018;
-keyLight.shadow.radius = 4.5;
+keyLight.shadow.radius = isMobilePerf ? 2.5 : 4.2;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0xdff6ff, 0.72);
+const fillLight = new THREE.DirectionalLight(0xe5f5ff, 0.48);
 fillLight.position.set(-4.5, -2.5, 4.5);
 scene.add(fillLight);
 
-// Plano receptor de sombra real sobre el fondo animado
+// Plano receptor de sombra real
 const shadowCatcher = new THREE.Mesh(
   new THREE.PlaneGeometry(24, 24),
-  new THREE.ShadowMaterial({ opacity: 0.28 })
+  new THREE.ShadowMaterial({ opacity: 0.34 })
 );
 shadowCatcher.position.set(0, 0, -1.45);
 shadowCatcher.receiveShadow = true;
 scene.add(shadowCatcher);
 
-// Geometría única de esquinas redondeadas exactas (para cuerpo biselado y caras)
+// Geometría única de esquinas redondeadas exactas (optimizada para 60 FPS móvil)
 const CARD_W = 3.40;
 const CARD_H = 2.14;
 const CARD_R = 0.17;
@@ -196,19 +199,17 @@ function createCardShape(w, h, r) {
 
 const cardShape = createCardShape(CARD_W, CARD_H, CARD_R);
 
-// Cuerpo sólido biselado (borde redondeado matemáticamente perfecto)
 const bodyGeo = new THREE.ExtrudeGeometry(cardShape, {
   depth: EXTRUDE_DEPTH,
   bevelEnabled: true,
   bevelThickness: BEVEL,
   bevelSize: BEVEL,
-  bevelSegments: 8,
-  curveSegments: 24,
+  bevelSegments: isMobilePerf ? 4 : 6,
+  curveSegments: isMobilePerf ? 14 : 20,
 });
 bodyGeo.translate(0, 0, -EXTRUDE_DEPTH / 2);
 
-// Placas frontales y traseras ajustadas al milímetro dentro del bisel
-const faceGeo = new THREE.ShapeGeometry(cardShape, 24);
+const faceGeo = new THREE.ShapeGeometry(cardShape, isMobilePerf ? 14 : 20);
 const posAttr = faceGeo.attributes.position;
 const uvAttr = faceGeo.attributes.uv;
 for (let i = 0; i < posAttr.count; i++) {
@@ -216,34 +217,34 @@ for (let i = 0; i < posAttr.count; i++) {
 }
 
 let currentPalette = PALETTES[0];
-let activeMaps = createCardMaps(currentPalette);
+let activeMaps = createCardMaps(currentPalette, isMobilePerf);
 let riceNormalTex = null;
 
 const rimMaterial = new THREE.MeshPhysicalMaterial({
   color: currentPalette.rimEdge,
   metalness: 0.72,
-  roughness: 0.24,
-  clearcoat: 0.48,
+  roughness: 0.25,
+  clearcoat: 0.45,
   clearcoatRoughness: 0.18,
 });
 
 const frontMaterial = new THREE.MeshPhysicalMaterial({
   map: activeMaps.frontTex,
   roughnessMap: activeMaps.roughTex,
-  metalness: 0.14,
-  roughness: 0.55,
-  clearcoat: 0.65,
-  clearcoatRoughness: 0.14,
+  metalness: 0.10,
+  roughness: 0.60,
+  clearcoat: 0.52,
+  clearcoatRoughness: 0.16,
   polygonOffset: true,
   polygonOffsetFactor: -1,
 });
 
 const backMaterial = new THREE.MeshPhysicalMaterial({
   map: activeMaps.backTex,
-  metalness: 0.08,
-  roughness: 0.42,
-  clearcoat: 0.35,
-  clearcoatRoughness: 0.22,
+  metalness: 0.04,
+  roughness: 0.54,
+  clearcoat: 0.22,
+  clearcoatRoughness: 0.28,
   polygonOffset: true,
   polygonOffsetFactor: -1,
 });
@@ -279,109 +280,117 @@ function createCardMesh(role) {
 const stage = new THREE.Group();
 scene.add(stage);
 
-const cardTop = createCardMesh('top');       // Muestra Frente
-const cardBottom = createCardMesh('bottom'); // Muestra Dorso
+const cardTop = createCardMesh('top');
+const cardBottom = createCardMesh('bottom');
 stage.add(cardTop, cardBottom);
 
 /* ==========================================================================
-   5. WEB WORKER: GENERACIÓN PARALELA DEL RELIEVE 3D "GRANO DE ARROZ"
+   5. WEB WORKER: RELIEVE 3D "GRANO DE ARROZ" EN PARALELO
    ========================================================================== */
 const worker = new Worker('./engine.worker.js', { type: 'module' });
-worker.postMessage({ type: 'BUILD_RICE_MAPS', width: 1024, height: 640 });
+worker.postMessage({
+  type: 'BUILD_RICE_MAPS',
+  width: isMobilePerf ? 512 : 1024,
+  height: isMobilePerf ? 320 : 640,
+});
 worker.onmessage = (e) => {
   if (e.data?.type === 'RICE_MAPS_READY') {
     const { width, height, normalBuffer } = e.data;
     riceNormalTex = new THREE.DataTexture(new Uint8Array(normalBuffer), width, height, THREE.RGBAFormat);
     riceNormalTex.colorSpace = THREE.NoColorSpace;
-    riceNormalTex.anisotropy = 4;
+    riceNormalTex.anisotropy = isMobilePerf ? 2 : 4;
     riceNormalTex.needsUpdate = true;
 
     frontMaterial.normalMap = riceNormalTex;
-    frontMaterial.normalScale.set(0.38, 0.38);
+    frontMaterial.normalScale.set(0.32, 0.32);
     frontMaterial.needsUpdate = true;
 
+    // Dorso ultra sutil para lectura nítida del QR y textos pequeños
     backMaterial.normalMap = riceNormalTex;
-    backMaterial.normalScale.set(0.18, 0.18);
+    backMaterial.normalScale.set(0.05, 0.05);
     backMaterial.needsUpdate = true;
   }
 };
 
 /* ==========================================================================
-   6. BANCO DE RESORTES WASM (POSICIÓN 1, POSICIÓN 2, INSPECCIÓN Y ARRASTRE)
+   6. BANCO DE RESORTES WASM (POSICIÓN 1, POSICIÓN 2 MÓVIL/PC E INSPECCIÓN)
    ========================================================================== */
-// Índices: 0..5 top(x,y,z,rx,ry,rz), 6..11 bot(x,y,z,rx,ry,rz), 12 camZ, 13 scale, 14..15 drag(rx,ry), 16..17 gyro(x,y), 18..19 light(x,y)
 const springs = new SpringBank(20);
 springs.setImmediate(12, 12);
 springs.setImmediate(13, 0.65);
 
-let currentMode = 'front';   // 'front' | 'studio'
-let inspectTarget = null;    // null | 'top' | 'bottom'
+let currentMode = 'front';
+let inspectTarget = null;
 let isOpened = false;
 
 const inspectBar = document.getElementById('inspect-bar');
 const inspectLabel = document.getElementById('inspect-label');
 const btnInspectClose = document.getElementById('btn-inspect-close');
+const microHint = document.getElementById('micro-hint');
 
 function updateTargets() {
   const aspect = window.innerWidth / window.innerHeight;
   const isNarrow = aspect < 0.95;
 
-  let tPos = [0, 1.25, 0], tRot = [0, 0, 0];
-  let bPos = [0, -1.25, 0], bRot = [0, Math.PI, 0];
-  let boxW = 4.1, boxH = 5.2;
+  let tPos = [0, 1.32, 0], tRot = [0, 0, 0];
+  let bPos = [0, -1.16, 0], bRot = [0, Math.PI, 0];
+  let boxW = 4.1, boxH = 5.65;
 
   if (inspectTarget === 'top') {
-    tPos = [0, 0.04, 0.85];
+    tPos = [0, -0.02, 0.78];
     tRot = [0, 0, 0];
-    bPos = [0, -5.2, -2.5];
+    bPos = [0, -5.6, -2.5];
     bRot = [0.25, Math.PI, 0];
-    boxW = 3.72;
-    boxH = 2.55;
+    boxW = 3.92;
+    boxH = 2.95;
     inspectLabel.textContent = 'Vista de Lectura — Frente';
     inspectBar.classList.add('is-visible');
+    microHint.classList.add('is-hidden');
   } else if (inspectTarget === 'bottom') {
-    tPos = [0, 5.2, -2.5];
+    tPos = [0, 5.6, -2.5];
     tRot = [-0.25, 0, 0];
-    bPos = [0, 0.04, 0.85];
+    bPos = [0, -0.02, 0.78];
     bRot = [0, Math.PI, 0];
-    boxW = 3.72;
-    boxH = 2.55;
+    boxW = 3.92;
+    boxH = 2.95;
     inspectLabel.textContent = 'Vista de Lectura — Dorso y QR';
     inspectBar.classList.add('is-visible');
+    microHint.classList.add('is-hidden');
   } else {
     inspectBar.classList.remove('is-visible');
+    microHint.classList.remove('is-hidden');
+
     if (currentMode === 'front') {
-      tPos = [0, 1.24, 0];
+      tPos = [0, 1.32, 0];
       tRot = [0, 0, 0];
-      bPos = [0, -1.24, 0];
+      bPos = [0, -1.16, 0];
       bRot = [0, Math.PI, 0];
       boxW = 4.1;
-      boxH = 5.25;
+      boxH = 5.65;
     } else {
-      // Vista Estudio Angulada (como tu referencia editorial)
       if (isNarrow) {
-        tPos = [-0.24, 0.96, 0.36];
-        tRot = [-0.15, 0.38, 0.23];
-        bPos = [0.24, -0.96, -0.32];
-        bRot = [0.14, Math.PI - 0.36, -0.17];
-        boxW = 4.3;
-        boxH = 5.0;
+        // En teléfonos: separadas con aire limpio para que NO se pisen entre sí
+        tPos = [-0.16, 1.28, 0.36];
+        tRot = [-0.14, 0.36, 0.21];
+        bPos = [0.18, -1.24, -0.32];
+        bRot = [0.13, Math.PI - 0.34, -0.16];
+        boxW = 4.35;
+        boxH = 5.80;
       } else {
         tPos = [-1.02, 0.24, 0.38];
         tRot = [-0.17, 0.43, 0.26];
         bPos = [1.04, -0.24, -0.34];
         bRot = [0.15, Math.PI - 0.38, -0.17];
         boxW = 6.45;
-        boxH = 3.85;
+        boxH = 3.95;
       }
     }
   }
 
-  // Cálculo matemático exacto para WebViews angostos (IG/WPP) y 4K
   const vFov = THREE.MathUtils.degToRad(camera.fov);
   const distV = (boxH / 2) / Math.tan(vFov / 2);
   const distH = (boxW / 2) / (Math.tan(vFov / 2) * aspect);
-  const targetZ = Math.max(distV, distH) + (inspectTarget ? 0.45 : 0.95);
+  const targetZ = Math.max(distV, distH) + (inspectTarget ? 0.65 : 0.95);
 
   const K = 165, C = 22.5;
   tPos.forEach((v, i) => springs.configure(i, v, K, C));
@@ -391,7 +400,6 @@ function updateTargets() {
   springs.configure(12, targetZ, 145, 22);
 }
 
-// Posición inicial antes del unboxing
 springs.setImmediate(1, -1.2);
 springs.setImmediate(2, -1.8);
 springs.setImmediate(7, -2.6);
@@ -413,7 +421,7 @@ function applyPalette(palette) {
   hudDot.style.background = palette.base;
 
   const oldMaps = activeMaps;
-  activeMaps = createCardMaps(palette);
+  activeMaps = createCardMaps(palette, isMobilePerf);
 
   frontMaterial.map = activeMaps.frontTex;
   frontMaterial.roughnessMap = activeMaps.roughTex;
@@ -430,7 +438,6 @@ function applyPalette(palette) {
     oldMaps.roughTex.dispose();
   }
 
-  // Impulso elástico sutil al cambiar de color
   springs.setImmediate(13, 0.94);
   springs.configure(13, 1.0, 260, 20);
   playTactileTone(640, 0.045, 0.025);
@@ -452,7 +459,7 @@ PALETTES.forEach((p, idx) => {
 });
 
 /* ==========================================================================
-   8. MOUSE, GIROSCOPIO, ARRASTRE ELÁSTICO Y RAYCASTER (TOCAR PARA LEER)
+   8. MOUSE, GIROSCOPIO, ARRASTRE ELÁSTICO Y RAYCASTER
    ========================================================================== */
 let inputX = 0, inputY = 0;
 let isDragging = false;
@@ -487,11 +494,9 @@ window.addEventListener('pointermove', (e) => {
 window.addEventListener('pointerup', (e) => {
   if (!isDragging) return;
   isDragging = false;
-  // Soltar con rebote elástico suave de regreso a 0
   springs.configure(14, 0, 140, 16);
   springs.configure(15, 0, 140, 16);
 
-  // Si fue un toque/clic limpio (no arrastre) -> Raycaster para acercar Frente o Dorso
   if (movedDist < 9 && isOpened) {
     pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
     pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -600,7 +605,7 @@ window.addEventListener('resize', () => {
 });
 
 /* ==========================================================================
-   10. LOOP 60/120 FPS CON SOMBRA DINÁMICA SEGÚN INCLINACIÓN Y LUZ
+   10. LOOP 60/120 FPS CON LUZ LATERAL Y SOMBRA DINÁMICA
    ========================================================================== */
 const clock = new THREE.Clock();
 
@@ -609,14 +614,12 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.033);
   const elapsed = clock.elapsedTime;
 
-  // Actualizar targets de giroscopio/mouse y luz dinámica
   const tiltFactor = inspectTarget ? 0.09 : 0.21;
   springs.configure(16, inputX * tiltFactor, 120, 20);
   springs.configure(17, inputY * (tiltFactor * 0.65), 120, 20);
   springs.configure(18, inputX, 95, 18);
   springs.configure(19, inputY, 95, 18);
 
-  // Resolver los 20 resortes en WebAssembly
   springs.stepAll(dt);
 
   cardTop.position.set(springs.get(0), springs.get(1), springs.get(2));
@@ -629,16 +632,14 @@ function animate() {
   const sc = springs.get(13);
   stage.scale.set(sc, sc, sc);
 
-  // Inclinación combinada (Giroscopio/Mouse + Arrastre táctil elástico + flotación orgánica)
   stage.rotation.y = springs.get(16) + springs.get(15);
   stage.rotation.x = springs.get(17) + springs.get(14);
   stage.position.y = Math.sin(elapsed * 1.35) * (inspectTarget ? 0.015 : 0.04);
 
-  // La luz direccional se desplaza sutilmente con el ángulo para mover la sombra real
   keyLight.position.set(
-    2.4 + springs.get(18) * 2.3,
-    3.4 - springs.get(19) * 1.9,
-    7.6
+    3.8 + springs.get(18) * 2.2,
+    4.2 - springs.get(19) * 1.8,
+    5.8
   );
 
   renderer.render(scene, camera);
